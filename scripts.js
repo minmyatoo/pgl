@@ -10,7 +10,7 @@ const LIBRARY_DATA = {
                 { range: "1-01 to 1-03", name: "Accessible Collection", audience: "All" },
                 { range: "1-04 to 1-23", name: "Early Literacy", audience: "Children" }
             ],
-            mapImage: "/mnt/user-data/uploads/level1-floor-plan.jpg"
+            mapImage: "./floor-plans/level1-floor-plan.jpg"
         },
         2: {
             name: "Level 2",
@@ -25,7 +25,7 @@ const LIBRARY_DATA = {
                 { range: "2-47", name: "Folktales (398.2)", audience: "Children" },
                 { range: "2-48 to 2-49", name: "English Picture Non-Fiction (JP)", audience: "Children" }
             ],
-            mapImage: "/mnt/user-data/uploads/level2-floor-plan.jpg"
+            mapImage: "./floor-plans/level2-floor-plan.jpg"
         },
         3: {
             name: "Level 3",
@@ -41,7 +41,7 @@ const LIBRARY_DATA = {
                 { range: "3-33 to 3-34", name: "Singapore Fiction", audience: "Adults" },
                 { range: "3-37 to 3-38", name: "Magazine", audience: "Adults" }
             ],
-            mapImage: "/mnt/user-data/uploads/level3-floor-plan.jpg"
+            mapImage: "./floor-plans/level3-floor-plan.jpg"
         },
         4: {
             name: "Level 4",
@@ -64,7 +64,7 @@ const LIBRARY_DATA = {
                 { range: "4-06", name: "Singapore Non-Fiction (Malay)", audience: "Adults" },
                 { range: "4-07 to 4-08", name: "Singapore Non-Fiction (Chinese)", audience: "Adults" }
             ],
-            mapImage: "/mnt/user-data/uploads/level4-floor-plan.jpg"
+            mapImage: "./floor-plans/level4-floor-plan.jpg"
         }
     },
     
