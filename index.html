@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punggol Regional Library - Book Shelving Assistant</title>
+    
+    <!-- Material Design CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="nav-wrapper">
+        <div class="container">
+            <a href="#" class="brand-logo">
+                <i class="material-icons">local_library</i>
+                Punggol Library Assistant
+            </a>
+            <ul class="right hide-on-med-and-down">
+                <li><a href="#search-section"><i class="material-icons left">search</i>Search</a></li>
+                <li><a href="#history-section"><i class="material-icons left">history</i>History</a></li>
+                <li><a href="#stats-section"><i class="material-icons left">analytics</i>Stats</a></li>
+                <li><a href="#ddc-section"><i class="material-icons left">book</i>DDC Guide</a></li>
+            </ul>
+            <a href="#" data-target="mobile-menu" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <ul class="sidenav" id="mobile-menu">
+        <li><a href="#search-section"><i class="material-icons">search</i>Search</a></li>
+        <li><a href="#history-section"><i class="material-icons">history</i>History</a></li>
+        <li><a href="#stats-section"><i class="material-icons">analytics</i>Stats</a></li>
+        <li><a href="#ddc-section"><i class="material-icons">book</i>DDC Guide</a></li>
+    </ul>
+
+    <!-- Main Container -->
+    <div class="container main-container">
+        
+        <!-- Search Section -->
+        <section id="search-section" class="section">
+            <div class="card main-card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">search</i>
+                        Find Book Location
+                    </span>
+                    
+                    <!-- Call Number Input -->
+                    <div class="row">
+                        <div class="input-field col s12 m8">
+                            <i class="material-icons prefix">label</i>
+                            <input type="text" id="callNumberInput" placeholder="e.g., J 636.7 HAM, JS STI, 398.2">
+                            <label for="callNumberInput">Enter Call Number</label>
+                            <span class="helper-text" id="inputHelper">Enter the call number from the book spine</span>
+                        </div>
+                        <div class="col s12 m4">
+                            <button class="btn waves-effect waves-light search-btn" id="searchBtn">
+                                <i class="material-icons left">search</i>
+                                Find Location
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Examples -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p class="example-label">Quick Examples:</p>
+                            <div class="chip example-chip" data-example="J 636.7 HAM">J 636.7 HAM</div>
+                            <div class="chip example-chip" data-example="JS STI">JS STI</div>
+                            <div class="chip example-chip" data-example="398.2">398.2</div>
+                            <div class="chip example-chip" data-example="J 940.53 DEA">J 940.53 DEA</div>
+                            <div class="chip example-chip" data-example="3-18">3-18</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div id="resultCard" class="card result-card" style="display: none;">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">location_on</i>
+                        Book Location Found
+                    </span>
+                    <div id="resultContent"></div>
+                    
+                    <!-- Interactive Map Container -->
+                    <div id="mapContainer" class="map-container">
+                        <img id="floorMap" src="" alt="Floor Map" class="responsive-img">
+                        <div id="locationMarker" class="location-marker"></div>
+                    </div>
+
+                    <!-- Navigation Steps -->
+                    <div id="navigationSteps" class="navigation-steps"></div>
+                </div>
+            </div>
+
+            <!-- Error Card -->
+            <div id="errorCard" class="card red lighten-4" style="display: none;">
+                <div class="card-content">
+                    <span class="card-title red-text">
+                        <i class="material-icons left">error</i>
+                        Error
+                    </span>
+                    <p id="errorMessage"></p>
+                    <div id="suggestions"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="history-section" class="section">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">history</i>
+                        Search History
+                    </span>
+                    <div class="row">
+                        <div class="col s12">
+                            <button class="btn-small waves-effect waves-light" id="clearHistoryBtn">
+                                <i class="material-icons left">delete</i>
+                                Clear History
+                            </button>
+                        </div>
+                    </div>
+                    <div id="historyList" class="collection">
+                        <div class="center-align grey-text">No search history yet</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Section (For Coordinators) -->
+        <section id="stats-section" class="section">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">analytics</i>
+                        Volunteer Performance Metrics
+                    </span>
+                    
+                    <div class="row">
+                        <div class="col s12 m6 l3">
+                            <div class="stat-card teal lighten-5">
+                                <i class="material-icons stat-icon teal-text">schedule</i>
+                                <h5 id="booksPerHour">0</h5>
+                                <p>Books/Hour</p>
+                            </div>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <div class="stat-card blue lighten-5">
+                                <i class="material-icons stat-icon blue-text">check_circle</i>
+                                <h5 id="totalSearches">0</h5>
+                                <p>Total Searches</p>
+                            </div>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <div class="stat-card orange lighten-5">
+                                <i class="material-icons stat-icon orange-text">error_outline</i>
+                                <h5 id="errorRate">0%</h5>
+                                <p>Error Rate</p>
+                            </div>
+                        </div>
+                        <div class="col s12 m6 l3">
+                            <div class="stat-card purple lighten-5">
+                                <i class="material-icons stat-icon purple-text">trending_up</i>
+                                <h5 id="sessionTime">0</h5>
+                                <p>Session (min)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Most Challenging Sections -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Most Challenging Sections</h6>
+                            <div id="challengingSections"></div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Chart -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Search Activity Over Time</h6>
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DDC Cheatsheet Section -->
+        <section id="ddc-section" class="section">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">book</i>
+                        DDC Quick Reference
+                    </span>
+                    
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="ddc-grid">
+                                <div class="ddc-item" data-range="000-099">
+                                    <div class="ddc-number">000-099</div>
+                                    <div class="ddc-category">General Knowledge</div>
+                                    <div class="ddc-examples">Computer Science, Information</div>
+                                </div>
+                                <div class="ddc-item" data-range="100-199">
+                                    <div class="ddc-number">100-199</div>
+                                    <div class="ddc-category">Philosophy & Psychology</div>
+                                    <div class="ddc-examples">Astrology, Mental Health</div>
+                                </div>
+                                <div class="ddc-item" data-range="200-299">
+                                    <div class="ddc-number">200-299</div>
+                                    <div class="ddc-category">Religion & Mythology</div>
+                                    <div class="ddc-examples">Religious Ethics, Theory</div>
+                                </div>
+                                <div class="ddc-item" data-range="300-399">
+                                    <div class="ddc-number">300-399</div>
+                                    <div class="ddc-category">Social Sciences & Folklore</div>
+                                    <div class="ddc-examples">Customs, Etiquette, 398.2 Folktales</div>
+                                </div>
+                                <div class="ddc-item" data-range="400-499">
+                                    <div class="ddc-number">400-499</div>
+                                    <div class="ddc-category">Languages & Grammar</div>
+                                    <div class="ddc-examples">English Usage, Sign Languages</div>
+                                </div>
+                                <div class="ddc-item" data-range="500-599">
+                                    <div class="ddc-number">500-599</div>
+                                    <div class="ddc-category">Natural Sciences</div>
+                                    <div class="ddc-examples">Math, Astronomy, 595.79 Insects, 599.63 Alpacas</div>
+                                </div>
+                                <div class="ddc-item" data-range="600-699">
+                                    <div class="ddc-number">600-699</div>
+                                    <div class="ddc-category">Medicine & Technology</div>
+                                    <div class="ddc-examples">636.7 Dogs, Health, Cooking</div>
+                                </div>
+                                <div class="ddc-item" data-range="700-799">
+                                    <div class="ddc-number">700-799</div>
+                                    <div class="ddc-category">Arts & Recreation</div>
+                                    <div class="ddc-examples">741.5 Comics, Sports, Music</div>
+                                </div>
+                                <div class="ddc-item" data-range="800-899">
+                                    <div class="ddc-number">800-899</div>
+                                    <div class="ddc-category">Writing & Literature</div>
+                                    <div class="ddc-examples">Poetry, Fiction, Essays</div>
+                                </div>
+                                <div class="ddc-item" data-range="900-999">
+                                    <div class="ddc-number">900-999</div>
+                                    <div class="ddc-category">History & Geography</div>
+                                    <div class="ddc-examples">940.53 WWII, Travel, Biography</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Language Indicators -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Language Indicators</h6>
+                            <div class="language-guide">
+                                <div class="language-item">
+                                    <span class="language-icon" style="background: #e53935;">📕</span>
+                                    <span>English</span>
+                                </div>
+                                <div class="language-item">
+                                    <span class="language-icon" style="background: #43a047;">📗</span>
+                                    <span>Malay</span>
+                                </div>
+                                <div class="language-item">
+                                    <span class="language-icon" style="background: #1e88e5;">📘</span>
+                                    <span>Tamil</span>
+                                </div>
+                                <div class="language-item">
+                                    <span class="language-icon" style="background: #000000; color: white;">📓</span>
+                                    <span>Chinese</span>
+                                </div>
+                                <div class="language-item">
+                                    <span class="language-icon" style="background: #fb8c00;">🦁</span>
+                                    <span>Singapore Literature</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Special Collections Guide -->
+        <section id="special-collections" class="section">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons left">stars</i>
+                        Special Collections & Edge Cases
+                    </span>
+                    
+                    <ul class="collapsible">
+                        <li>
+                            <div class="collapsible-header"><i class="material-icons">location_city</i>Singapore Literature</div>
+                            <div class="collapsible-body">
+                                <p><strong>Location:</strong> Level 3 (3-33 to 3-34) for Fiction</p>
+                                <p><strong>Indicator:</strong> Lion icon on spine label</p>
+                                <p><strong>Note:</strong> Books by Singaporean authors or published in Singapore</p>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="collapsible-header"><i class="material-icons">menu_book</i>Fairytales & Folktales</div>
+                            <div class="collapsible-body">
+                                <p><strong>DDC:</strong> Always 398.2</p>
+                                <p><strong>Location:</strong> Level 2, Children Collection</p>
+                                <p><strong>Note:</strong> Even though they're stories, they're classified as Non-Fiction</p>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="collapsible-header"><i class="material-icons">language</i>Mother Tongue Languages</div>
+                            <div class="collapsible-body">
+                                <p><strong>Chinese Fiction:</strong> Level 3 (3-26 to 3-32)</p>
+                                <p><strong>Malay Fiction:</strong> Level 3 (3-36)</p>
+                                <p><strong>Tamil Fiction:</strong> Level 3 (3-35)</p>
+                                <p><strong>Chinese Non-Fiction:</strong> Level 4 (4-37 to 4-44)</p>
+                                <p><strong>Malay Non-Fiction:</strong> Level 4 (4-45)</p>
+                                <p><strong>Tamil Non-Fiction:</strong> Level 4 (4-46)</p>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="collapsible-header"><i class="material-icons">auto_stories</i>Comics & Graphic Novels</div>
+                            <div class="collapsible-body">
+                                <p><strong>DDC:</strong> 741.5 or 741.59</p>
+                                <p><strong>Location:</strong> Level 3, Teens Collection</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large waves-effect waves-light" id="helpBtn">
+            <i class="material-icons">help</i>
+        </a>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <h4><i class="material-icons left">help</i>How to Use This Assistant</h4>
+            <ol>
+                <li><strong>Enter Call Number:</strong> Type the call number from the book spine (e.g., J 636.7 HAM)</li>
+                <li><strong>View Location:</strong> The system will show you the exact floor and shelf location</li>
+                <li><strong>Follow Map:</strong> Use the interactive map to navigate to the correct shelf</li>
+                <li><strong>Check History:</strong> Review your recent searches in the History tab</li>
+                <li><strong>Track Progress:</strong> Coordinators can view performance metrics in the Stats tab</li>
+            </ol>
+            <h5>Call Number Format</h5>
+            <p><strong>Fiction:</strong> [Section Code] [First 3 letters of author]</p>
+            <p>Example: JS STI = Junior Simple, author Stilton</p>
+            <p><strong>Non-Fiction:</strong> [Section Code] [DDC Number] [Author]</p>
+            <p>Example: J 636.7 HAM = Junior, Dogs (636.7), author Hamilton</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Got it!</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>
