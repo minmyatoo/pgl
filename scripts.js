@@ -10,7 +10,7 @@ const LIBRARY_DATA = {
                 { range: "1-01 to 1-03", name: "Accessible Collection", audience: "All" },
                 { range: "1-04 to 1-23", name: "Early Literacy", audience: "Children" }
             ],
-            mapImage: "./floor-plans/level1-floor-plan.jpg"
+            mapImage: "images/level1-floor-plan.jpg"
         },
         2: {
             name: "Level 2",
@@ -25,7 +25,7 @@ const LIBRARY_DATA = {
                 { range: "2-47", name: "Folktales (398.2)", audience: "Children" },
                 { range: "2-48 to 2-49", name: "English Picture Non-Fiction (JP)", audience: "Children" }
             ],
-            mapImage: "./floor-plans/level2-floor-plan.jpg"
+            mapImage: "images/level2-floor-plan.jpg"
         },
         3: {
             name: "Level 3",
@@ -41,7 +41,7 @@ const LIBRARY_DATA = {
                 { range: "3-33 to 3-34", name: "Singapore Fiction", audience: "Adults" },
                 { range: "3-37 to 3-38", name: "Magazine", audience: "Adults" }
             ],
-            mapImage: "./floor-plans/level3-floor-plan.jpg"
+            mapImage: "images/level3-floor-plan.jpg"
         },
         4: {
             name: "Level 4",
@@ -64,7 +64,7 @@ const LIBRARY_DATA = {
                 { range: "4-06", name: "Singapore Non-Fiction (Malay)", audience: "Adults" },
                 { range: "4-07 to 4-08", name: "Singapore Non-Fiction (Chinese)", audience: "Adults" }
             ],
-            mapImage: "./floor-plans/level4-floor-plan.jpg"
+            mapImage: "images/level4-floor-plan.jpg"
         }
     },
     
@@ -200,7 +200,7 @@ class CallNumberParser {
         }
         
         // Fiction pattern: JS STI, J LEF, etc.
-        if (/^(JS|J|JP|YA|SING)\s+[A-Z]{3}/.test(cleaned)) {
+        if (/^(JS|J|JP|YA|SING)\s+[A-Z]{3,4}/.test(cleaned)) {
             return this.parseFiction(cleaned);
         }
         
@@ -214,9 +214,14 @@ class CallNumberParser {
             return this.parseDDCOnly(cleaned);
         }
         
-        // Adult fiction: Just three letters
-        if (/^[A-Z]{3}$/.test(cleaned)) {
+        // Adult fiction: 3-4 letter author codes (CAS, CAT, MIUS, MIYK)
+        if (/^[A-Z]{3,4}$/.test(cleaned)) {
             return this.parseAdultFiction(cleaned);
+        }
+        
+        // Shelf number search: just a shelf number without level (18, 26, 47, etc.)
+        if (/^\d{1,2}$/.test(cleaned)) {
+            return this.parseShelfNumberOnly(cleaned);
         }
         
         return { success: false, error: 'Unrecognized call number format' };
@@ -354,7 +359,65 @@ class CallNumberParser {
             author: input,
             level: 3,
             audience: 'Adults',
-            collection: 'English Fiction'
+            collection: 'English Fiction',
+            authorLength: input.length
+        };
+    }
+
+    static parseShelfNumberOnly(input) {
+        const shelfNum = parseInt(input);
+        const possibleLocations = [];
+        
+        // Search through all levels for matching shelf numbers
+        Object.keys(LIBRARY_DATA.levels).forEach(levelNum => {
+            const levelData = LIBRARY_DATA.levels[levelNum];
+            levelData.collections.forEach(coll => {
+                const ranges = coll.range.split(',').map(r => r.trim());
+                ranges.forEach(range => {
+                    if (range.includes('to')) {
+                        const [start, end] = range.split('to').map(r => {
+                            const match = r.trim().match(/\d+-(\d+)/);
+                            return match ? parseInt(match[1]) : 0;
+                        });
+                        if (shelfNum >= start && shelfNum <= end) {
+                            possibleLocations.push({
+                                level: parseInt(levelNum),
+                                collection: coll.name,
+                                audience: coll.audience,
+                                fullShelf: `${levelNum}-${shelfNum}`,
+                                range: range
+                            });
+                        }
+                    } else {
+                        const match = range.match(/\d+-(\d+)/);
+                        if (match && parseInt(match[1]) === shelfNum) {
+                            possibleLocations.push({
+                                level: parseInt(levelNum),
+                                collection: coll.name,
+                                audience: coll.audience,
+                                fullShelf: `${levelNum}-${shelfNum}`,
+                                range: range
+                            });
+                        }
+                    }
+                });
+            });
+        });
+        
+        if (possibleLocations.length === 0) {
+            return { 
+                success: false, 
+                error: `Shelf number ${input} not found in any level` 
+            };
+        }
+        
+        return {
+            success: true,
+            type: 'shelf-search',
+            shelfNumber: input,
+            locations: possibleLocations,
+            level: possibleLocations[0].level, // Default to first match
+            audience: possibleLocations[0].audience
         };
     }
 
@@ -399,6 +462,11 @@ class LocationFinder {
             case 'shelf':
                 shelfLocation = parsedData.shelf;
                 tips = this.getShelfTips(parsedData);
+                break;
+            case 'shelf-search':
+                shelfLocation = parsedData.locations[0].fullShelf;
+                tips = this.getShelfSearchTips(parsedData);
+                parsedData.collection = parsedData.locations[0].collection;
                 break;
             case 'ddc':
                 shelfLocation = this.findDDCLocation(parsedData);
@@ -502,9 +570,25 @@ class LocationFinder {
         return [
             `Adult Fiction is on Level 3`,
             `Books are arranged alphabetically by author surname`,
-            `Look for "${data.author}" on the spine labels`,
-            `Located in shelves 3-10 to 3-14`
+            `Look for "${data.author}" (${data.authorLength} letter code) on the spine labels`,
+            `Located in shelves 3-10 to 3-14`,
+            `Author codes can be 3-4 letters (e.g., CAS, CAT, MIUS, MIYK)`
         ];
+    }
+
+    static getShelfSearchTips(data) {
+        const tips = [
+            `Shelf number ${data.shelfNumber} found in ${data.locations.length} location(s):`,
+        ];
+        
+        data.locations.forEach((loc, index) => {
+            tips.push(`${index + 1}. Level ${loc.level} - ${loc.collection} (${loc.fullShelf}) - ${loc.audience} section`);
+        });
+        
+        tips.push(`Most likely location: ${data.locations[0].fullShelf}`);
+        tips.push(`Collection: ${data.locations[0].collection}`);
+        
+        return tips;
     }
 }
 
@@ -714,6 +798,23 @@ class UIController {
         this.elements.errorCard.style.display = 'none';
         this.elements.resultCard.style.display = 'block';
 
+        // Handle shelf-search type with multiple locations
+        let additionalInfo = '';
+        if (location.type === 'shelf-search' && location.locations && location.locations.length > 1) {
+            additionalInfo = `
+                <div class="info-item" style="grid-column: 1 / -1;">
+                    <div class="info-label">Multiple Locations Found</div>
+                    <div class="info-value">
+                        ${location.locations.map((loc, idx) => `
+                            <div style="padding: 8px; margin: 5px 0; background: #e3f2fd; border-radius: 4px;">
+                                <strong>Option ${idx + 1}:</strong> Level ${loc.level} - ${loc.collection} (${loc.fullShelf})
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         const resultHTML = `
             <div class="result-info">
                 <div class="info-item">
@@ -741,9 +842,10 @@ class UIController {
                 ${location.author ? `
                 <div class="info-item">
                     <div class="info-label">Author Code</div>
-                    <div class="info-value">${location.author}</div>
+                    <div class="info-value">${location.author}${location.authorLength ? ` (${location.authorLength} letters)` : ''}</div>
                 </div>
                 ` : ''}
+                ${additionalInfo}
             </div>
         `;
 
@@ -773,6 +875,8 @@ class UIController {
             return 'Non-Fiction';
         } else if (location.type === 'special') {
             return 'Special Collection';
+        } else if (location.type === 'shelf-search') {
+            return 'Shelf Location Search';
         }
         return 'General';
     }
