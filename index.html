@@ -53,9 +53,9 @@
                     <div class="row">
                         <div class="input-field col s12 m8">
                             <i class="material-icons prefix">label</i>
-                            <input type="text" id="callNumberInput" placeholder="e.g., J 636.7 HAM, JS STI, CAS, MIUS, 3-18, 18">
+                            <input type="text" id="callNumberInput" placeholder="e.g., TAMIL MIYM, MALAY MIYM, J 636.7 HAM, 3-18">
                             <label for="callNumberInput">Enter Call Number</label>
-                            <span class="helper-text" id="inputHelper">Enter call number, author code, or shelf number</span>
+                            <span class="helper-text" id="inputHelper">Enter call number, author code with language, or shelf number</span>
                         </div>
                         <div class="col s12 m4">
                             <button class="btn waves-effect waves-light search-btn" id="searchBtn">
@@ -69,13 +69,14 @@
                     <div class="row">
                         <div class="col s12">
                             <p class="example-label">Quick Examples:</p>
+                            <div class="chip example-chip" data-example="TAMIL MIYM">TAMIL MIYM</div>
+                            <div class="chip example-chip" data-example="MALAY MIYM">MALAY MIYM</div>
+                            <div class="chip example-chip" data-example="CHINESE MIYM">CHINESE MIYM</div>
+                            <div class="chip example-chip" data-example="ENGLISH MIYM">ENGLISH MIYM</div>
                             <div class="chip example-chip" data-example="J 636.7 HAM">J 636.7 HAM</div>
                             <div class="chip example-chip" data-example="JS STI">JS STI</div>
                             <div class="chip example-chip" data-example="398.2">398.2</div>
-                            <div class="chip example-chip" data-example="MIUS">MIUS</div>
-                            <div class="chip example-chip" data-example="CAS">CAS</div>
                             <div class="chip example-chip" data-example="3-18">3-18</div>
-                            <div class="chip example-chip" data-example="18">18</div>
                         </div>
                     </div>
                 </div>
@@ -363,16 +364,30 @@
                 <li><strong>Track Progress:</strong> Coordinators can view performance metrics in the Stats tab</li>
             </ol>
             <h5>Call Number Formats</h5>
-            <p><strong>Fiction:</strong> [Section Code] [3-4 letters of author]</p>
-            <p>Example: JS STI = Junior Simple, author Stilton</p>
+            
+            <p><strong>Language-Specific Fiction (NEW!):</strong> [Language] [Author Code]</p>
+            <p class="indent">
+                Examples:<br>
+                • <code>TAMIL MIYM</code> = Tamil Fiction, author MIYM → Level 3 (3-35)<br>
+                • <code>MALAY MIYM</code> = Malay Fiction, author MIYM → Level 3 (3-36)<br>
+                • <code>CHINESE MIYM</code> = Chinese Fiction, author MIYM → Level 3 (3-26 to 3-32)<br>
+                • <code>ENGLISH MIYM</code> = English Fiction, author MIYM → Level 3 (3-10 to 3-14)
+            </p>
+            
+            <p><strong>Junior Fiction:</strong> [Section Code] [3-4 letters of author]</p>
+            <p class="indent">Example: <code>JS STI</code> = Junior Simple, author Stilton</p>
+            
             <p><strong>Non-Fiction:</strong> [Section Code] [DDC Number] [Author]</p>
-            <p>Example: J 636.7 HAM = Junior, Dogs (636.7), author Hamilton</p>
-            <p><strong>Adult Fiction:</strong> [3-4 letter author code]</p>
-            <p>Examples: CAS, CAT, MIUS, MIYK</p>
+            <p class="indent">Example: <code>J 636.7 HAM</code> = Junior, Dogs (636.7), author Hamilton</p>
+            
+            <p><strong>Adult Fiction (without language):</strong> [3-4 letter author code]</p>
+            <p class="indent">Examples: <code>CAS</code>, <code>MIUS</code> (defaults to English Fiction)</p>
+            
             <p><strong>Shelf Number:</strong> [Level-Shelf] or just [Shelf]</p>
-            <p>Examples: 3-18, 4-26, or just 18 (searches all levels)</p>
+            <p class="indent">Examples: <code>3-18</code>, <code>4-26</code>, or <code>18</code> (searches all levels)</p>
+            
             <p><strong>DDC Only:</strong> [Number]</p>
-            <p>Example: 398.2 = Folktales</p>
+            <p class="indent">Example: <code>398.2</code> = Folktales</p>
         </div>
         <div class="modal-footer">
             <a href="#!" class="modal-close waves-effect waves-green btn-flat">Got it!</a>

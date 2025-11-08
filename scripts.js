@@ -118,6 +118,7 @@ class AppState {
             const stored = localStorage.getItem(key);
             return stored ? JSON.parse(stored) : defaultValue;
         } catch (e) {
+            console.warn(`Storage access blocked or error loading ${key}:`, e.message);
             return defaultValue;
         }
     }
@@ -126,7 +127,8 @@ class AppState {
         try {
             localStorage.setItem(key, JSON.stringify(value));
         } catch (e) {
-            console.error('Storage error:', e);
+            console.warn(`Storage access blocked or error saving ${key}:`, e.message);
+            // Continue without storage - app will work but won't persist data
         }
     }
 
@@ -197,6 +199,11 @@ class CallNumberParser {
         // Adult shelf number pattern (3-18, 4-26, etc.)
         if (/^\d-\d+$/.test(cleaned)) {
             return this.parseShelfNumber(cleaned);
+        }
+        
+        // Language-specific fiction: TAMIL MIYM, MALAY MIYM, CHINESE MIYM, ENGLISH MIYM
+        if (/^(TAMIL|MALAY|CHINESE|ENGLISH)\s+[A-Z]{3,4}$/.test(cleaned)) {
+            return this.parseLanguageFiction(cleaned);
         }
         
         // Fiction pattern: JS STI, J LEF, etc.
@@ -360,7 +367,69 @@ class CallNumberParser {
             level: 3,
             audience: 'Adults',
             collection: 'English Fiction',
-            authorLength: input.length
+            authorLength: input.length,
+            language: 'English' // Default to English if no language specified
+        };
+    }
+
+    static parseLanguageFiction(input) {
+        const parts = input.split(/\s+/);
+        const language = parts[0];
+        const author = parts[1];
+        
+        // Language-specific shelf locations
+        const languageMap = {
+            'ENGLISH': {
+                shelf: '3-10 to 3-14',
+                collection: 'English Fiction',
+                level: 3,
+                icon: '📕 Red',
+                description: 'Adult English Fiction'
+            },
+            'TAMIL': {
+                shelf: '3-35',
+                collection: 'Tamil Fiction',
+                level: 3,
+                icon: '📘 Blue',
+                description: 'Adult Tamil Fiction'
+            },
+            'MALAY': {
+                shelf: '3-36',
+                collection: 'Malay Fiction',
+                level: 3,
+                icon: '📗 Green',
+                description: 'Adult Malay Fiction'
+            },
+            'CHINESE': {
+                shelf: '3-26 to 3-32',
+                collection: 'Chinese Fiction',
+                level: 3,
+                icon: '📓 Black',
+                description: 'Adult Chinese Fiction'
+            }
+        };
+        
+        const langInfo = languageMap[language];
+        
+        if (!langInfo) {
+            return { 
+                success: false, 
+                error: `Language "${language}" not recognized. Try: English, Tamil, Malay, or Chinese` 
+            };
+        }
+        
+        return {
+            success: true,
+            type: 'language-fiction',
+            language: language,
+            author: author,
+            authorLength: author.length,
+            level: langInfo.level,
+            shelf: langInfo.shelf,
+            collection: langInfo.collection,
+            languageIcon: langInfo.icon,
+            audience: 'Adults',
+            description: langInfo.description
         };
     }
 
@@ -476,6 +545,10 @@ class LocationFinder {
                 shelfLocation = '3-10 to 3-14';
                 tips = this.getAdultFictionTips(parsedData);
                 break;
+            case 'language-fiction':
+                shelfLocation = parsedData.shelf;
+                tips = this.getLanguageFictionTips(parsedData);
+                break;
         }
 
         return {
@@ -589,6 +662,18 @@ class LocationFinder {
         tips.push(`Collection: ${data.locations[0].collection}`);
         
         return tips;
+    }
+
+    static getLanguageFictionTips(data) {
+        return [
+            `${data.language} Fiction on Level 3`,
+            `Look for spine label with ${data.languageIcon} indicator`,
+            `Books are arranged alphabetically by author surname`,
+            `Author code: "${data.author}" (${data.authorLength} letters)`,
+            `Located in shelves ${data.shelf}`,
+            `${data.description} section`,
+            `All ${data.language} fiction books are grouped together`
+        ];
     }
 }
 
@@ -815,6 +900,17 @@ class UIController {
             `;
         }
 
+        // Language-specific info
+        let languageInfo = '';
+        if (location.type === 'language-fiction') {
+            languageInfo = `
+                <div class="info-item">
+                    <div class="info-label">Language</div>
+                    <div class="info-value">${location.language} ${location.languageIcon}</div>
+                </div>
+            `;
+        }
+
         const resultHTML = `
             <div class="result-info">
                 <div class="info-item">
@@ -825,6 +921,7 @@ class UIController {
                     <div class="info-label">Collection</div>
                     <div class="info-value">${location.collection || location.sectionName || 'General'}</div>
                 </div>
+                ${languageInfo}
                 <div class="info-item">
                     <div class="info-label">Floor Level</div>
                     <div class="info-value">Level ${location.level}</div>
@@ -871,6 +968,8 @@ class UIController {
     getBookType(location) {
         if (location.type === 'fiction' || location.type === 'adult-fiction') {
             return 'Fiction';
+        } else if (location.type === 'language-fiction') {
+            return `${location.language} Fiction`;
         } else if (location.type === 'non-fiction' || location.type === 'ddc') {
             return 'Non-Fiction';
         } else if (location.type === 'special') {
@@ -1009,53 +1108,89 @@ class UIController {
 
     renderActivityChart() {
         const canvas = document.getElementById('activityChart');
+        if (!canvas) return; // Exit if canvas doesn't exist
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            const chartContainer = canvas.closest('.row');
+            if (chartContainer) {
+                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Chart visualization requires Chart.js library</p></div>';
+            }
+            return;
+        }
+        
         const ctx = canvas.getContext('2d');
 
         // Prepare data for last 10 searches
         const times = this.state.statistics.searchTimes.slice(-10);
+        
+        // Need at least 2 data points for a chart
+        if (times.length < 2) {
+            const chartContainer = canvas.closest('.row');
+            if (chartContainer) {
+                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Perform more searches to see activity trends</p></div>';
+            }
+            return;
+        }
+        
         const labels = times.map((t, i) => `#${i + 1}`);
         const data = times.map((t, i, arr) => {
             if (i === 0) return 0;
             return Math.round((t - arr[i - 1]) / 1000); // seconds between searches
         });
 
-        if (window.activityChart) {
-            window.activityChart.destroy();
+        // Properly destroy existing chart if it exists
+        if (window.activityChart && typeof window.activityChart.destroy === 'function') {
+            try {
+                window.activityChart.destroy();
+            } catch (e) {
+                console.log('Chart destroy error (non-critical):', e);
+            }
         }
 
-        window.activityChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Time Between Searches (seconds)',
-                    data: data,
-                    borderColor: '#1976d2',
-                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+        // Create new chart
+        try {
+            window.activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Time Between Searches (seconds)',
+                        data: data,
+                        borderColor: '#1976d2',
+                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
                             display: true,
-                            text: 'Seconds'
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Seconds'
+                            }
                         }
                     }
                 }
+            });
+        } catch (e) {
+            console.error('Error creating chart:', e);
+            // Fallback: show error message
+            const chartContainer = canvas.closest('.row');
+            if (chartContainer) {
+                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Chart could not be loaded</p></div>';
             }
-        });
+        }
     }
 
     updateUI() {
@@ -1071,6 +1206,11 @@ class UIController {
 let state, ui;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded - statistics chart will be disabled');
+    }
+    
     state = new AppState();
     ui = new UIController(state);
 
@@ -1080,4 +1220,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 30000);
 
     console.log('Punggol Regional Library Book Shelving Assistant loaded successfully!');
+    
+    // Show welcome toast
+    setTimeout(() => {
+        M.toast({ 
+            html: '👋 Welcome! Enter a call number to find book locations.', 
+            displayLength: 4000,
+            classes: 'blue'
+        });
+    }, 500);
 });
