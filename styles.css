@@ -414,6 +414,49 @@ body {
     font-weight: 500;
 }
 
+/* Performance Insights */
+.performance-insights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.insight-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.insight-card .material-icons {
+    font-size: 2.5rem;
+}
+
+.insight-content {
+    flex: 1;
+}
+
+.insight-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.insight-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
 /* DDC Section */
 .ddc-grid {
     display: grid;
@@ -645,6 +688,55 @@ body {
     padding: 40px;
 }
 
+/* Touch-Friendly Improvements */
+.example-chip,
+.ddc-item,
+.collection-item,
+.history-actions i,
+.suggestion-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-container {
+    touch-action: pan-x pan-y pinch-zoom;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.map-container img {
+    max-width: none;
+    cursor: grab;
+}
+
+.map-container img:active {
+    cursor: grabbing;
+}
+
+/* Swipe indicator for mobile */
+.swipe-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    pointer-events: none;
+    opacity: 0;
+    animation: swipeHint 3s ease-in-out;
+}
+
+@keyframes swipeHint {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
 /* Responsive Design */
 @media only screen and (max-width: 992px) {
     .brand-logo {
@@ -657,6 +749,21 @@ body {
 
     .stat-card {
         margin-bottom: 20px;
+    }
+
+    /* Larger touch targets on mobile */
+    .btn,
+    .btn-small,
+    .btn-floating,
+    button {
+        min-height: 48px;
+        min-width: 48px;
+    }
+
+    .example-chip {
+        padding: 8px 16px;
+        margin: 8px 4px;
+        font-size: 1rem;
     }
 }
 
@@ -690,19 +797,199 @@ body {
 /* Print Styles */
 @media print {
     body {
-        background: white;
+        background: white !important;
+        color: black !important;
     }
 
+    /* Hide non-essential elements */
     .nav-wrapper,
     .fixed-action-btn,
-    .search-btn {
-        display: none;
+    .search-btn,
+    .example-chip,
+    #themeToggle,
+    #themeToggleMobile,
+    #helpBtn,
+    .sidenav,
+    .sidenav-trigger,
+    #clearHistoryBtn,
+    #exportHistoryBtn,
+    #exportStatsBtn,
+    .history-actions,
+    #search-section .input-field,
+    #search-section .example-label,
+    body.dark-mode .nav-wrapper {
+        display: none !important;
     }
 
+    /* Show only results when printing */
     .card {
         box-shadow: none;
         border: 1px solid #ddd;
         page-break-inside: avoid;
+        background: white !important;
+        color: black !important;
+        margin-bottom: 20px;
+    }
+
+    .card-title {
+        color: black !important;
+        font-size: 18pt;
+        border-bottom: 2px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    /* Result card optimization */
+    .result-card,
+    .result-info {
+        page-break-inside: avoid;
+    }
+
+    .info-item {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
+        margin-bottom: 10px;
+    }
+
+    .info-label {
+        font-weight: bold;
+        color: #333 !important;
+    }
+
+    .info-value {
+        color: black !important;
+    }
+
+    /* Navigation steps */
+    .navigation-steps {
+        background: white !important;
+        page-break-inside: avoid;
+    }
+
+    .step-item {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
+        margin: 5px 0;
+    }
+
+    .step-number {
+        background: #333 !important;
+        color: white !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .step-text {
+        color: black !important;
+    }
+
+    /* Map container */
+    .map-container {
+        page-break-inside: avoid;
+        max-width: 100%;
+        background: white !important;
+    }
+
+    .map-container img {
+        max-width: 100%;
+        height: auto !important;
+        page-break-inside: avoid;
+    }
+
+    .location-marker {
+        background: red !important;
+        border: 2px solid black !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* History section */
+    .collection-item {
+        background: white !important;
+        border-bottom: 1px solid #ccc !important;
+        color: black !important;
+    }
+
+    .history-call-number {
+        color: black !important;
+        font-weight: bold;
+    }
+
+    .history-timestamp {
+        color: #666 !important;
+    }
+
+    /* Statistics section */
+    .stat-card {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
+        page-break-inside: avoid;
+    }
+
+    .stat-card h5,
+    .stat-card p {
+        color: black !important;
+    }
+
+    /* DDC section */
+    .ddc-item {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
+        page-break-inside: avoid;
+    }
+
+    .ddc-number,
+    .ddc-category,
+    .ddc-examples {
+        color: black !important;
+    }
+
+    /* Header for print */
+    @page {
+        margin: 1cm;
+    }
+
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #333;
+        padding-bottom: 10px;
+    }
+
+    /* Add print date */
+    .result-card::after,
+    #history-section::after,
+    #stats-section::after {
+        content: "Printed: " attr(data-print-date);
+        display: block;
+        font-size: 10pt;
+        color: #666;
+        margin-top: 15px;
+        text-align: right;
+    }
+
+    /* Force black text everywhere */
+    * {
+        color: black !important;
+        background: white !important;
+    }
+
+    /* Except specific elements that need their backgrounds */
+    .step-number,
+    .location-marker {
+        background: #333 !important;
+        color: white !important;
+    }
+
+    /* Chart canvas */
+    canvas {
+        page-break-inside: avoid;
+        max-width: 100%;
     }
 }
 
@@ -758,4 +1045,212 @@ input:focus,
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--secondary-color);
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e0e0;
+}
+
+body.dark-mode .nav-wrapper {
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+}
+
+body.dark-mode .card {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .main-card {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%);
+}
+
+body.dark-mode .card-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .result-card {
+    background: linear-gradient(135deg, #1e3a1e 0%, #1e1e1e 100%);
+}
+
+body.dark-mode .info-item {
+    background: #2a2a2a;
+    border-left-color: #64b5f6;
+}
+
+body.dark-mode .info-label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .info-value {
+    color: #e0e0e0;
+}
+
+body.dark-mode .step-item {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-left-color: #64b5f6;
+}
+
+body.dark-mode .step-text {
+    color: #e0e0e0;
+}
+
+body.dark-mode .navigation-steps {
+    background: #2a2a2a;
+}
+
+body.dark-mode .collection-item {
+    background: #2a2a2a;
+    border-bottom-color: #3a3a3a;
+}
+
+body.dark-mode .collection-item:hover {
+    background: #333333;
+}
+
+body.dark-mode .history-call-number {
+    color: #64b5f6;
+}
+
+body.dark-mode .history-timestamp {
+    color: #888;
+}
+
+body.dark-mode .stat-card {
+    background: #2a2a2a !important;
+    color: #e0e0e0;
+}
+
+body.dark-mode .challenge-item {
+    background: #2a2a2a;
+}
+
+body.dark-mode .challenge-name {
+    color: #e0e0e0;
+}
+
+body.dark-mode .insight-card {
+    background: #2a2a2a;
+}
+
+body.dark-mode .insight-label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .insight-value {
+    color: #e0e0e0;
+}
+
+body.dark-mode .ddc-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .ddc-number,
+body.dark-mode .ddc-category {
+    color: #e0e0e0;
+}
+
+body.dark-mode .ddc-examples {
+    color: #b0b0b0;
+}
+
+body.dark-mode .language-item {
+    background: #2a2a2a;
+}
+
+body.dark-mode .collapsible-header {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .collapsible-header:hover {
+    background: #333333;
+}
+
+body.dark-mode .collapsible-body {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .modal {
+    background: #1e1e1e;
+}
+
+body.dark-mode .modal-content {
+    color: #e0e0e0;
+}
+
+body.dark-mode .modal-content h4 {
+    color: #64b5f6;
+}
+
+body.dark-mode .modal-content h5 {
+    color: #ffb74d;
+}
+
+body.dark-mode .modal-content code {
+    background: #2a2a2a;
+    color: #64b5f6;
+}
+
+body.dark-mode .modal-content p.indent {
+    color: #b0b0b0;
+}
+
+body.dark-mode input,
+body.dark-mode textarea {
+    color: #e0e0e0;
+}
+
+body.dark-mode .helper-text {
+    color: #b0b0b0;
+}
+
+body.dark-mode .example-chip {
+    background-color: #1e3a5f;
+    color: #64b5f6;
+}
+
+body.dark-mode .example-chip:hover {
+    background-color: #64b5f6;
+    color: #1a1a2e;
+}
+
+body.dark-mode .suggestion-item {
+    background: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .suggestion-item:hover {
+    background: #3a2a2a;
+}
+
+body.dark-mode .map-container {
+    background: #2a2a2a;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: #64b5f6;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #ffb74d;
+}
+
+/* Dark Mode Toggle Animation */
+#themeToggle i,
+#themeToggleMobile i {
+    transition: transform 0.3s ease;
+}
+
+#themeToggle:hover i,
+#themeToggleMobile:hover i {
+    transform: rotate(180deg);
 }

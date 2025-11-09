@@ -104,7 +104,9 @@ class AppState {
             successfulSearches: 0,
             errors: 0,
             challengingSections: {},
-            searchTimes: []
+            searchTimes: [],
+            levelDistribution: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            hourlyDistribution: Array(24).fill(0)
         });
         this.currentSession = {
             searches: 0,
@@ -145,26 +147,37 @@ class AppState {
         this.saveToStorage('searchHistory', this.searchHistory);
     }
 
-    recordSearch(callNumber, success, section = null) {
+    recordSearch(callNumber, success, section = null, level = null) {
         this.statistics.totalSearches++;
         this.currentSession.searches++;
-        
+
         if (success) {
             this.statistics.successfulSearches++;
             if (section) {
-                this.statistics.challengingSections[section] = 
+                this.statistics.challengingSections[section] =
                     (this.statistics.challengingSections[section] || 0) + 1;
+            }
+            if (level && level >= 1 && level <= 4) {
+                this.statistics.levelDistribution[level] =
+                    (this.statistics.levelDistribution[level] || 0) + 1;
             }
         } else {
             this.statistics.errors++;
             this.currentSession.errors++;
         }
-        
+
+        const now = new Date();
+        const hour = now.getHours();
+        if (!this.statistics.hourlyDistribution) {
+            this.statistics.hourlyDistribution = Array(24).fill(0);
+        }
+        this.statistics.hourlyDistribution[hour]++;
+
         this.statistics.searchTimes.push(Date.now());
         if (this.statistics.searchTimes.length > 100) {
             this.statistics.searchTimes = this.statistics.searchTimes.slice(-100);
         }
-        
+
         this.saveToStorage('statistics', this.statistics);
     }
 
@@ -769,11 +782,16 @@ class UIController {
             suggestions: document.getElementById('suggestions'),
             historyList: document.getElementById('historyList'),
             clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            exportHistoryBtn: document.getElementById('exportHistoryBtn'),
+            exportStatsBtn: document.getElementById('exportStatsBtn'),
+            printResultBtn: document.getElementById('printResultBtn'),
             mapContainer: document.getElementById('mapContainer'),
             floorMap: document.getElementById('floorMap'),
             navigationSteps: document.getElementById('navigationSteps'),
             helpBtn: document.getElementById('helpBtn'),
-            inputHelper: document.getElementById('inputHelper')
+            inputHelper: document.getElementById('inputHelper'),
+            themeToggle: document.getElementById('themeToggle'),
+            themeToggleMobile: document.getElementById('themeToggleMobile')
         };
     }
 
@@ -803,7 +821,10 @@ class UIController {
             this.validateInput(e.target.value);
         });
 
-        // Example chips
+        // Skip to main content link (for keyboard navigation)
+        this.addSkipLink();
+
+        // Example chips with keyboard support
         document.querySelectorAll('.example-chip').forEach(chip => {
             chip.addEventListener('click', (e) => {
                 const example = e.target.getAttribute('data-example');
@@ -811,10 +832,34 @@ class UIController {
                 this.elements.callNumberInput.focus();
                 M.updateTextFields();
             });
+
+            // Keyboard support for example chips
+            chip.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const example = e.target.getAttribute('data-example');
+                    this.elements.callNumberInput.value = example;
+                    this.elements.callNumberInput.focus();
+                    M.updateTextFields();
+                }
+            });
         });
 
         // History
         this.elements.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+
+        // Export functionality
+        if (this.elements.exportHistoryBtn) {
+            this.elements.exportHistoryBtn.addEventListener('click', () => this.exportHistory());
+        }
+        if (this.elements.exportStatsBtn) {
+            this.elements.exportStatsBtn.addEventListener('click', () => this.exportStatistics());
+        }
+
+        // Print functionality
+        if (this.elements.printResultBtn) {
+            this.elements.printResultBtn.addEventListener('click', () => window.print());
+        }
 
         // Help
         this.elements.helpBtn.addEventListener('click', () => {
@@ -822,12 +867,204 @@ class UIController {
             modal.open();
         });
 
-        // DDC items
+        // DDC items with keyboard support
         document.querySelectorAll('.ddc-item').forEach(item => {
+            // Make focusable
+            item.setAttribute('tabindex', '0');
+            item.setAttribute('role', 'button');
+
             item.addEventListener('click', (e) => {
                 const range = e.currentTarget.getAttribute('data-range');
                 M.toast({ html: `DDC Range: ${range}`, displayLength: 2000 });
             });
+
+            // Keyboard support
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const range = e.currentTarget.getAttribute('data-range');
+                    M.toast({ html: `DDC Range: ${range}`, displayLength: 2000 });
+                }
+            });
+        });
+
+        // Theme toggle
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleTheme();
+            });
+        }
+
+        if (this.elements.themeToggleMobile) {
+            this.elements.themeToggleMobile.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleTheme();
+                // Close mobile menu
+                const sidenavInstance = M.Sidenav.getInstance(document.getElementById('mobile-menu'));
+                if (sidenavInstance) sidenavInstance.close();
+            });
+        }
+
+        // Load theme preference
+        this.loadTheme();
+    }
+
+    toggleTheme() {
+        const isDarkMode = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+
+        // Update icon
+        const icon = isDarkMode ? 'brightness_7' : 'brightness_4';
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.querySelector('i').textContent = icon;
+        }
+        if (this.elements.themeToggleMobile) {
+            this.elements.themeToggleMobile.querySelector('i').textContent = icon;
+        }
+
+        M.toast({
+            html: isDarkMode ? 'Dark mode enabled' : 'Light mode enabled',
+            displayLength: 1500
+        });
+    }
+
+    loadTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            const icon = 'brightness_7';
+            if (this.elements.themeToggle) {
+                this.elements.themeToggle.querySelector('i').textContent = icon;
+            }
+            if (this.elements.themeToggleMobile) {
+                this.elements.themeToggleMobile.querySelector('i').textContent = icon;
+            }
+        }
+    }
+
+    addSkipLink() {
+        // Add skip to main content link for keyboard users
+        const skipLink = document.createElement('a');
+        skipLink.href = '#search-section';
+        skipLink.className = 'skip-link';
+        skipLink.textContent = 'Skip to main content';
+        skipLink.style.cssText = `
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #667eea;
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        `;
+
+        skipLink.addEventListener('focus', () => {
+            skipLink.style.top = '0';
+        });
+
+        skipLink.addEventListener('blur', () => {
+            skipLink.style.top = '-40px';
+        });
+
+        document.body.insertBefore(skipLink, document.body.firstChild);
+    }
+
+    enableMapInteractions() {
+        const mapContainer = this.elements.mapContainer;
+        const floorMap = this.elements.floorMap;
+
+        if (!mapContainer || !floorMap) return;
+
+        let scale = 1;
+        let panning = false;
+        let pointX = 0;
+        let pointY = 0;
+        let start = { x: 0, y: 0 };
+
+        // Mouse/Touch panning
+        const startPan = (e) => {
+            panning = true;
+            start = { x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY };
+            mapContainer.style.cursor = 'grabbing';
+        };
+
+        const pan = (e) => {
+            if (!panning) return;
+            e.preventDefault();
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            const dx = x - start.x;
+            const dy = y - start.y;
+
+            mapContainer.scrollLeft -= dx;
+            mapContainer.scrollTop -= dy;
+
+            start = { x, y };
+        };
+
+        const endPan = () => {
+            panning = false;
+            mapContainer.style.cursor = 'grab';
+        };
+
+        // Add event listeners
+        floorMap.addEventListener('mousedown', startPan);
+        floorMap.addEventListener('touchstart', startPan, { passive: false });
+        floorMap.addEventListener('mousemove', pan);
+        floorMap.addEventListener('touchmove', pan, { passive: false });
+        floorMap.addEventListener('mouseup', endPan);
+        floorMap.addEventListener('touchend', endPan);
+        floorMap.addEventListener('mouseleave', endPan);
+
+        // Pinch-to-zoom for mobile
+        let initialDistance = 0;
+        let currentScale = 1;
+
+        const getDistance = (touches) => {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        floorMap.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialDistance = getDistance(e.touches);
+            }
+        }, { passive: true });
+
+        floorMap.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getDistance(e.touches);
+                const scaleChange = currentDistance / initialDistance;
+                currentScale = Math.min(Math.max(1, currentScale * scaleChange), 3);
+                floorMap.style.transform = `scale(${currentScale})`;
+                initialDistance = currentDistance;
+            }
+        }, { passive: false });
+
+        floorMap.addEventListener('touchend', () => {
+            initialDistance = 0;
+        });
+
+        // Double-tap to zoom
+        let lastTap = 0;
+        floorMap.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                if (currentScale > 1) {
+                    currentScale = 1;
+                    floorMap.style.transform = 'scale(1)';
+                } else {
+                    currentScale = 2;
+                    floorMap.style.transform = 'scale(2)';
+                }
+            }
+            lastTap = currentTime;
         });
     }
 
@@ -874,7 +1111,7 @@ class UIController {
         const location = LocationFinder.findLocation(parsed);
         this.displayResult(location);
         this.state.addToHistory(validation.cleaned, location);
-        this.state.recordSearch(validation.cleaned, true, location.collection);
+        this.state.recordSearch(validation.cleaned, true, location.collection, location.level);
         this.updateStatistics();
         this.renderHistory();
     }
@@ -948,10 +1185,12 @@ class UIController {
 
         this.elements.resultContent.innerHTML = resultHTML;
 
-        // Display map
+        // Display map with interactive marker
         if (location.mapImage) {
             this.elements.floorMap.src = location.mapImage;
             this.elements.mapContainer.style.display = 'block';
+            this.positionLocationMarker(location);
+            this.enableMapInteractions();
         }
 
         // Display navigation steps
@@ -978,6 +1217,82 @@ class UIController {
             return 'Shelf Location Search';
         }
         return 'General';
+    }
+
+    positionLocationMarker(location) {
+        const marker = document.getElementById('locationMarker');
+        if (!marker) return;
+
+        // Approximate coordinates based on level and shelf location (percentages)
+        const coordinates = this.getMarkerCoordinates(location);
+
+        if (coordinates) {
+            marker.style.left = coordinates.x + '%';
+            marker.style.top = coordinates.y + '%';
+            marker.style.display = 'block';
+            marker.title = `${location.collection || 'Location'}: ${location.shelfLocation}`;
+        } else {
+            marker.style.display = 'none';
+        }
+    }
+
+    getMarkerCoordinates(location) {
+        // Map shelf locations to approximate coordinates on floor plans
+        // Format: { x: percentage from left, y: percentage from top }
+        const shelfCoordinates = {
+            // Level 1
+            '1-01 to 1-03': { x: 20, y: 30 },
+            '1-04 to 1-23': { x: 60, y: 50 },
+
+            // Level 2
+            '2-01 to 2-12': { x: 25, y: 35 },
+            '2-13 to 2-25': { x: 50, y: 40 },
+            '2-26 to 2-31': { x: 70, y: 45 },
+            '2-32 to 2-37': { x: 45, y: 55 },
+            '2-38 to 2-40': { x: 30, y: 60 },
+            '2-47': { x: 60, y: 65 },
+
+            // Level 3
+            '3-10 to 3-14': { x: 40, y: 40 },
+            '3-18': { x: 30, y: 35 },
+            '3-25': { x: 50, y: 50 },
+            '3-26 to 3-32': { x: 65, y: 45 },
+            '3-33 to 3-34': { x: 55, y: 55 },
+            '3-35': { x: 70, y: 60 },
+            '3-36': { x: 75, y: 55 },
+
+            // Level 4
+            '4-09 to 4-14': { x: 25, y: 35 },
+            '4-15 to 4-20': { x: 45, y: 40 },
+            '4-21 to 4-25': { x: 55, y: 45 },
+            '4-26 to 4-35': { x: 50, y: 55 },
+            '4-37 to 4-44': { x: 65, y: 50 },
+            '4-45': { x: 70, y: 55 },
+            '4-46': { x: 75, y: 60 },
+            '4-47 to 4-49': { x: 60, y: 65 }
+        };
+
+        // Try exact match first
+        if (shelfCoordinates[location.shelfLocation]) {
+            return shelfCoordinates[location.shelfLocation];
+        }
+
+        // Try to find a matching range
+        for (const [range, coords] of Object.entries(shelfCoordinates)) {
+            if (range.includes(location.shelfLocation)) {
+                return coords;
+            }
+        }
+
+        // Default position for level
+        const defaultPositions = {
+            1: { x: 50, y: 45 },
+            2: { x: 50, y: 45 },
+            3: { x: 50, y: 45 },
+            4: { x: 50, y: 45 }
+        };
+
+        return defaultPositions[location.level] || { x: 50, y: 50 };
     }
 
     displayNavigationSteps(location) {
@@ -1083,6 +1398,9 @@ class UIController {
 
         this.renderChallengingSections();
         this.renderActivityChart();
+        this.renderSuccessChart();
+        this.renderLevelChart();
+        this.renderPerformanceInsights();
     }
 
     renderChallengingSections() {
@@ -1108,89 +1426,289 @@ class UIController {
 
     renderActivityChart() {
         const canvas = document.getElementById('activityChart');
-        if (!canvas) return; // Exit if canvas doesn't exist
-        
-        // Check if Chart.js is available
-        if (typeof Chart === 'undefined') {
-            const chartContainer = canvas.closest('.row');
-            if (chartContainer) {
-                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Chart visualization requires Chart.js library</p></div>';
-            }
-            return;
-        }
-        
-        const ctx = canvas.getContext('2d');
+        if (!canvas || typeof Chart === 'undefined') return;
 
-        // Prepare data for last 10 searches
+        const ctx = canvas.getContext('2d');
         const times = this.state.statistics.searchTimes.slice(-10);
-        
-        // Need at least 2 data points for a chart
-        if (times.length < 2) {
-            const chartContainer = canvas.closest('.row');
-            if (chartContainer) {
-                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Perform more searches to see activity trends</p></div>';
-            }
-            return;
-        }
-        
+
+        if (times.length < 2) return;
+
         const labels = times.map((t, i) => `#${i + 1}`);
         const data = times.map((t, i, arr) => {
             if (i === 0) return 0;
-            return Math.round((t - arr[i - 1]) / 1000); // seconds between searches
+            return Math.round((t - arr[i - 1]) / 1000);
         });
 
-        // Properly destroy existing chart if it exists
         if (window.activityChart && typeof window.activityChart.destroy === 'function') {
-            try {
-                window.activityChart.destroy();
-            } catch (e) {
-                console.log('Chart destroy error (non-critical):', e);
-            }
+            window.activityChart.destroy();
         }
 
-        // Create new chart
-        try {
-            window.activityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Time Between Searches (seconds)',
-                        data: data,
-                        borderColor: '#1976d2',
-                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
+        window.activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Time Between Searches (seconds)',
+                    data: data,
+                    borderColor: '#1976d2',
+                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
                             display: true,
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Seconds'
-                            }
+                            text: 'Seconds'
                         }
                     }
                 }
-            });
-        } catch (e) {
-            console.error('Error creating chart:', e);
-            // Fallback: show error message
-            const chartContainer = canvas.closest('.row');
-            if (chartContainer) {
-                chartContainer.innerHTML = '<div class="col s12"><p class="grey-text center-align">Chart could not be loaded</p></div>';
+            }
+        });
+    }
+
+    renderSuccessChart() {
+        const canvas = document.getElementById('successChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const ctx = canvas.getContext('2d');
+        const stats = this.state.statistics;
+
+        if (window.successChart && typeof window.successChart.destroy === 'function') {
+            window.successChart.destroy();
+        }
+
+        window.successChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Successful', 'Errors'],
+                datasets: [{
+                    data: [stats.successfulSearches, stats.errors],
+                    backgroundColor: ['#43a047', '#e53935'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    renderLevelChart() {
+        const canvas = document.getElementById('levelChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const ctx = canvas.getContext('2d');
+        const levelDist = this.state.statistics.levelDistribution || { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+        if (window.levelChart && typeof window.levelChart.destroy === 'function') {
+            window.levelChart.destroy();
+        }
+
+        window.levelChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Level 1', 'Level 2', 'Level 3', 'Level 4'],
+                datasets: [{
+                    label: 'Searches by Level',
+                    data: [levelDist[1] || 0, levelDist[2] || 0, levelDist[3] || 0, levelDist[4] || 0],
+                    backgroundColor: ['#1976d2', '#43a047', '#fb8c00', '#9c27b0'],
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderPerformanceInsights() {
+        const container = document.getElementById('performanceInsights');
+        if (!container) return;
+
+        const stats = this.state.statistics;
+        const avgSearchTime = this.calculateAverageSearchTime();
+        const peakHour = this.getPeakHour();
+
+        const insights = [
+            {
+                icon: 'speed',
+                label: 'Average Search Time',
+                value: avgSearchTime ? `${avgSearchTime.toFixed(1)}s` : 'N/A',
+                color: 'blue'
+            },
+            {
+                icon: 'schedule',
+                label: 'Peak Activity Hour',
+                value: peakHour >= 0 ? `${peakHour}:00` : 'N/A',
+                color: 'purple'
+            },
+            {
+                icon: 'trending_up',
+                label: 'Success Rate',
+                value: `${100 - this.state.getErrorRate()}%`,
+                color: 'green'
+            },
+            {
+                icon: 'library_books',
+                label: 'Most Popular Level',
+                value: this.getMostPopularLevel(),
+                color: 'orange'
+            }
+        ];
+
+        const html = insights.map(insight => `
+            <div class="insight-card ${insight.color}-text">
+                <i class="material-icons">${insight.icon}</i>
+                <div class="insight-content">
+                    <div class="insight-label">${insight.label}</div>
+                    <div class="insight-value">${insight.value}</div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = html;
+    }
+
+    calculateAverageSearchTime() {
+        const times = this.state.statistics.searchTimes;
+        if (times.length < 2) return null;
+
+        let totalTime = 0;
+        for (let i = 1; i < times.length; i++) {
+            totalTime += (times[i] - times[i - 1]) / 1000;
+        }
+        return totalTime / (times.length - 1);
+    }
+
+    getPeakHour() {
+        const hourlyDist = this.state.statistics.hourlyDistribution;
+        if (!hourlyDist || hourlyDist.every(h => h === 0)) return -1;
+
+        let maxHour = 0;
+        let maxCount = 0;
+        for (let i = 0; i < hourlyDist.length; i++) {
+            if (hourlyDist[i] > maxCount) {
+                maxCount = hourlyDist[i];
+                maxHour = i;
             }
         }
+        return maxHour;
+    }
+
+    getMostPopularLevel() {
+        const levelDist = this.state.statistics.levelDistribution;
+        if (!levelDist) return 'N/A';
+
+        let maxLevel = 1;
+        let maxCount = 0;
+        for (const [level, count] of Object.entries(levelDist)) {
+            if (count > maxCount) {
+                maxCount = count;
+                maxLevel = level;
+            }
+        }
+        return maxCount > 0 ? `Level ${maxLevel}` : 'N/A';
+    }
+
+    exportHistory() {
+        if (this.state.searchHistory.length === 0) {
+            M.toast({ html: 'No search history to export', displayLength: 2000, classes: 'orange' });
+            return;
+        }
+
+        // Create CSV content
+        const headers = ['Timestamp', 'Call Number', 'Level', 'Collection', 'Shelf Location'];
+        const rows = this.state.searchHistory.map(item => {
+            const date = new Date(item.timestamp);
+            const result = item.result || {};
+            return [
+                date.toLocaleString(),
+                item.callNumber,
+                result.level || 'N/A',
+                result.collection || result.sectionName || 'N/A',
+                result.shelfLocation || 'N/A'
+            ];
+        });
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        // Download CSV
+        this.downloadFile(csvContent, 'search-history.csv', 'text/csv');
+        M.toast({ html: 'Search history exported successfully!', displayLength: 2000, classes: 'green' });
+    }
+
+    exportStatistics() {
+        const stats = this.state.statistics;
+
+        // Create CSV content
+        const csvContent = [
+            'Metric,Value',
+            `Total Searches,${stats.totalSearches}`,
+            `Successful Searches,${stats.successfulSearches}`,
+            `Errors,${stats.errors}`,
+            `Error Rate,${this.state.getErrorRate()}%`,
+            `Books Per Hour,${this.state.getBooksPerHour()}`,
+            `Session Duration (minutes),${this.state.getSessionDuration()}`,
+            '',
+            'Challenging Sections',
+            'Section,Search Count',
+            ...Object.entries(stats.challengingSections)
+                .sort((a, b) => b[1] - a[1])
+                .map(([section, count]) => `"${section}",${count}`)
+        ].join('\n');
+
+        // Download CSV
+        this.downloadFile(csvContent, 'performance-statistics.csv', 'text/csv');
+        M.toast({ html: 'Statistics exported successfully!', displayLength: 2000, classes: 'green' });
+    }
+
+    downloadFile(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 
     updateUI() {
@@ -1210,7 +1728,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js not loaded - statistics chart will be disabled');
     }
-    
+
     state = new AppState();
     ui = new UIController(state);
 
@@ -1219,12 +1737,23 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.updateStatistics();
     }, 30000);
 
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('Service Worker registered successfully:', registration.scope);
+            })
+            .catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+    }
+
     console.log('Punggol Regional Library Book Shelving Assistant loaded successfully!');
-    
+
     // Show welcome toast
     setTimeout(() => {
-        M.toast({ 
-            html: '👋 Welcome! Enter a call number to find book locations.', 
+        M.toast({
+            html: '👋 Welcome! Enter a call number to find book locations.',
             displayLength: 4000,
             classes: 'blue'
         });
