@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A web application to help library volunteers and patrons quickly locate books on shelves within Punggol Regional Library">
+    <meta name="theme-color" content="#667eea">
     <title>Punggol Regional Library - Book Shelving Assistant</title>
-    
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PRL Assistant">
+
     <!-- Material Design CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -13,19 +23,20 @@
 </head>
 <body>
     <!-- Header -->
-    <nav class="nav-wrapper">
+    <nav class="nav-wrapper" role="navigation" aria-label="Main navigation">
         <div class="container">
-            <a href="#" class="brand-logo">
-                <i class="material-icons">local_library</i>
+            <a href="#" class="brand-logo" aria-label="Punggol Library Assistant Home">
+                <i class="material-icons" aria-hidden="true">local_library</i>
                 Punggol Library Assistant
             </a>
             <ul class="right hide-on-med-and-down">
-                <li><a href="#search-section"><i class="material-icons left">search</i>Search</a></li>
-                <li><a href="#history-section"><i class="material-icons left">history</i>History</a></li>
-                <li><a href="#stats-section"><i class="material-icons left">analytics</i>Stats</a></li>
-                <li><a href="#ddc-section"><i class="material-icons left">book</i>DDC Guide</a></li>
+                <li><a href="#search-section" aria-label="Go to Search section"><i class="material-icons left" aria-hidden="true">search</i>Search</a></li>
+                <li><a href="#history-section" aria-label="Go to History section"><i class="material-icons left" aria-hidden="true">history</i>History</a></li>
+                <li><a href="#stats-section" aria-label="Go to Statistics section"><i class="material-icons left" aria-hidden="true">analytics</i>Stats</a></li>
+                <li><a href="#ddc-section" aria-label="Go to DDC Guide section"><i class="material-icons left" aria-hidden="true">book</i>DDC Guide</a></li>
+                <li><a href="#" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode"><i class="material-icons" aria-hidden="true">brightness_4</i></a></li>
             </ul>
-            <a href="#" data-target="mobile-menu" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+            <a href="#" data-target="mobile-menu" class="sidenav-trigger" aria-label="Open mobile menu"><i class="material-icons">menu</i></a>
         </div>
     </nav>
 
@@ -35,31 +46,38 @@
         <li><a href="#history-section"><i class="material-icons">history</i>History</a></li>
         <li><a href="#stats-section"><i class="material-icons">analytics</i>Stats</a></li>
         <li><a href="#ddc-section"><i class="material-icons">book</i>DDC Guide</a></li>
+        <li><a href="#" id="themeToggleMobile"><i class="material-icons">brightness_4</i>Toggle Dark Mode</a></li>
     </ul>
 
     <!-- Main Container -->
     <div class="container main-container">
         
         <!-- Search Section -->
-        <section id="search-section" class="section">
+        <section id="search-section" class="section" aria-labelledby="search-heading">
             <div class="card main-card">
                 <div class="card-content">
-                    <span class="card-title">
-                        <i class="material-icons left">search</i>
+                    <span class="card-title" id="search-heading">
+                        <i class="material-icons left" aria-hidden="true">search</i>
                         Find Book Location
                     </span>
-                    
+
                     <!-- Call Number Input -->
                     <div class="row">
                         <div class="input-field col s12 m8">
-                            <i class="material-icons prefix">label</i>
-                            <input type="text" id="callNumberInput" placeholder="e.g., TAMIL MIYM, MALAY MIYM, J 636.7 HAM, 3-18">
+                            <i class="material-icons prefix" aria-hidden="true">label</i>
+                            <input
+                                type="text"
+                                id="callNumberInput"
+                                placeholder="e.g., TAMIL MIYM, MALAY MIYM, J 636.7 HAM, 3-18"
+                                aria-describedby="inputHelper"
+                                aria-label="Enter call number"
+                                autocomplete="off">
                             <label for="callNumberInput">Enter Call Number</label>
-                            <span class="helper-text" id="inputHelper">Enter call number, author code with language, or shelf number</span>
+                            <span class="helper-text" id="inputHelper" role="status" aria-live="polite">Enter call number, author code with language, or shelf number</span>
                         </div>
                         <div class="col s12 m4">
-                            <button class="btn waves-effect waves-light search-btn" id="searchBtn">
-                                <i class="material-icons left">search</i>
+                            <button class="btn waves-effect waves-light search-btn" id="searchBtn" aria-label="Search for book location">
+                                <i class="material-icons left" aria-hidden="true">search</i>
                                 Find Location
                             </button>
                         </div>
@@ -69,48 +87,56 @@
                     <div class="row">
                         <div class="col s12">
                             <p class="example-label">Quick Examples:</p>
-                            <div class="chip example-chip" data-example="TAMIL MIYM">TAMIL MIYM</div>
-                            <div class="chip example-chip" data-example="MALAY MIYM">MALAY MIYM</div>
-                            <div class="chip example-chip" data-example="CHINESE MIYM">CHINESE MIYM</div>
-                            <div class="chip example-chip" data-example="ENGLISH MIYM">ENGLISH MIYM</div>
-                            <div class="chip example-chip" data-example="J 636.7 HAM">J 636.7 HAM</div>
-                            <div class="chip example-chip" data-example="JS STI">JS STI</div>
-                            <div class="chip example-chip" data-example="398.2">398.2</div>
-                            <div class="chip example-chip" data-example="3-18">3-18</div>
+                            <div role="group" aria-label="Example call numbers">
+                                <button class="chip example-chip" data-example="TAMIL MIYM" tabindex="0" aria-label="Example: Tamil Fiction MIYM">TAMIL MIYM</button>
+                                <button class="chip example-chip" data-example="MALAY MIYM" tabindex="0" aria-label="Example: Malay Fiction MIYM">MALAY MIYM</button>
+                                <button class="chip example-chip" data-example="CHINESE MIYM" tabindex="0" aria-label="Example: Chinese Fiction MIYM">CHINESE MIYM</button>
+                                <button class="chip example-chip" data-example="ENGLISH MIYM" tabindex="0" aria-label="Example: English Fiction MIYM">ENGLISH MIYM</button>
+                                <button class="chip example-chip" data-example="J 636.7 HAM" tabindex="0" aria-label="Example: Junior Non-fiction Dogs">J 636.7 HAM</button>
+                                <button class="chip example-chip" data-example="JS STI" tabindex="0" aria-label="Example: Junior Simple Fiction">JS STI</button>
+                                <button class="chip example-chip" data-example="398.2" tabindex="0" aria-label="Example: Folktales">398.2</button>
+                                <button class="chip example-chip" data-example="3-18" tabindex="0" aria-label="Example: Shelf Location 3-18">3-18</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Result Card -->
-            <div id="resultCard" class="card result-card" style="display: none;">
+            <div id="resultCard" class="card result-card" style="display: none;" role="region" aria-labelledby="result-heading" aria-live="polite">
                 <div class="card-content">
-                    <span class="card-title">
-                        <i class="material-icons left">location_on</i>
+                    <span class="card-title" id="result-heading">
+                        <i class="material-icons left" aria-hidden="true">location_on</i>
                         Book Location Found
                     </span>
-                    <div id="resultContent"></div>
-                    
+                    <div class="right">
+                        <button class="btn-small waves-effect waves-light" id="printResultBtn" aria-label="Print result">
+                            <i class="material-icons left" aria-hidden="true">print</i>
+                            Print
+                        </button>
+                    </div>
+                    <div id="resultContent" role="region" aria-label="Search result details"></div>
+
                     <!-- Interactive Map Container -->
-                    <div id="mapContainer" class="map-container">
-                        <img id="floorMap" src="" alt="Floor Map" class="responsive-img">
-                        <div id="locationMarker" class="location-marker"></div>
+                    <div id="mapContainer" class="map-container" role="img" aria-label="Floor plan showing book location">
+                        <img id="floorMap" src="" alt="Library floor plan with location marker" class="responsive-img">
+                        <div id="locationMarker" class="location-marker" role="img" aria-label="Book location marker"></div>
                     </div>
 
                     <!-- Navigation Steps -->
-                    <div id="navigationSteps" class="navigation-steps"></div>
+                    <div id="navigationSteps" class="navigation-steps" role="navigation" aria-label="Step-by-step directions"></div>
                 </div>
             </div>
 
             <!-- Error Card -->
-            <div id="errorCard" class="card red lighten-4" style="display: none;">
+            <div id="errorCard" class="card red lighten-4" style="display: none;" role="alert" aria-live="assertive">
                 <div class="card-content">
                     <span class="card-title red-text">
-                        <i class="material-icons left">error</i>
+                        <i class="material-icons left" aria-hidden="true">error</i>
                         Error
                     </span>
                     <p id="errorMessage"></p>
-                    <div id="suggestions"></div>
+                    <div id="suggestions" role="region" aria-label="Suggestions"></div>
                 </div>
             </div>
         </section>
@@ -124,10 +150,16 @@
                         Search History
                     </span>
                     <div class="row">
-                        <div class="col s12">
+                        <div class="col s12 m6">
                             <button class="btn-small waves-effect waves-light" id="clearHistoryBtn">
                                 <i class="material-icons left">delete</i>
                                 Clear History
+                            </button>
+                        </div>
+                        <div class="col s12 m6">
+                            <button class="btn-small waves-effect waves-light blue" id="exportHistoryBtn">
+                                <i class="material-icons left">download</i>
+                                Export History
                             </button>
                         </div>
                     </div>
@@ -146,6 +178,12 @@
                         <i class="material-icons left">analytics</i>
                         Volunteer Performance Metrics
                     </span>
+                    <div class="right">
+                        <button class="btn-small waves-effect waves-light blue" id="exportStatsBtn">
+                            <i class="material-icons left">download</i>
+                            Export Stats
+                        </button>
+                    </div>
                     
                     <div class="row">
                         <div class="col s12 m6 l3">
@@ -186,11 +224,31 @@
                         </div>
                     </div>
 
-                    <!-- Performance Chart -->
+                    <!-- Performance Charts -->
                     <div class="row">
-                        <div class="col s12">
+                        <div class="col s12 m6">
                             <h6>Search Activity Over Time</h6>
                             <canvas id="activityChart"></canvas>
+                        </div>
+                        <div class="col s12 m6">
+                            <h6>Success vs Error Rate</h6>
+                            <canvas id="successChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Additional Metrics -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Performance Insights</h6>
+                            <div id="performanceInsights" class="performance-insights"></div>
+                        </div>
+                    </div>
+
+                    <!-- Level Distribution -->
+                    <div class="row">
+                        <div class="col s12">
+                            <h6>Most Searched Levels</h6>
+                            <canvas id="levelChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -347,9 +405,9 @@
 
     <!-- Floating Action Button -->
     <div class="fixed-action-btn">
-        <a class="btn-floating btn-large waves-effect waves-light" id="helpBtn">
-            <i class="material-icons">help</i>
-        </a>
+        <button class="btn-floating btn-large waves-effect waves-light" id="helpBtn" aria-label="Open help guide">
+            <i class="material-icons" aria-hidden="true">help</i>
+        </button>
     </div>
 
     <!-- Help Modal -->
